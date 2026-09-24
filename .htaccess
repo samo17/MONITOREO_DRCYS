@@ -1,0 +1,10 @@
+RewriteEngine On
+
+# Acceso principal
+RewriteRule ^$ public/index.php [L,QSA]
+
+# Redirigir internamente index.php de la raíz hacia public/index.php
+RewriteRule ^index\.php$ public/index.php [L,QSA]
+
+# Si se solicita directamente public/, dejarlo funcionar normalmente
+RewriteRule ^public/ - [L]
