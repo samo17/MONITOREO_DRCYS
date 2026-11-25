@@ -17,43 +17,30 @@ public function index(): void
 {
     Auth::requirePermission('IPRESS');
 
-    $pagina = isset($_GET['pagina'])
-        ? (int) $_GET['pagina']
-        : 1;
-
-    $porPagina = isset($_GET['porPagina'])
-        ? (int) $_GET['porPagina']
-        : 10;
+    $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
+    $opcionesPorPagina = [5, 10, 20, 50, 100];
+    $porPagina = (int) ($_GET['porPagina'] ?? 10);
+    if (!in_array($porPagina, $opcionesPorPagina, true)) $porPagina = 10;
 
     $busqueda = trim($_GET['busqueda'] ?? '');
-
     $estado = $_GET['estado'] ?? '1';
+    if (!in_array($estado, ['1', '0', 'todos'], true)) $estado = '1';
+    $codUE = trim($_GET['codUE'] ?? '');
+    $red = trim($_GET['red'] ?? '');
+    $microred = trim($_GET['microred'] ?? '');
 
-    /*
-     * Valores permitidos:
-     * 1 = Activos
-     * 0 = Inactivos
-     * todos = Todos
-     */
-    if (!in_array($estado, ['1', '0', 'todos'], true)) {
-        $estado = '1';
-    }
+    $unidadesEjecutoras = $this->ipressModel->listarUnidadesEjecutoras();
+    $redes = $codUE !== '' ? $this->ipressModel->listarRedesPorUE($codUE) : [];
+    $microredes = ($codUE !== '' && $red !== '')
+        ? $this->ipressModel->listarMicroredesPorRed($codUE, $red) : [];
 
-    $ipressModel = new Ipress();
+    $total = $this->ipressModel->total($busqueda, $estado, $codUE, $red, $microred);
+    $totalPaginas = max(1, (int) ceil($total / $porPagina));
+    if ($pagina > $totalPaginas) $pagina = $totalPaginas;
 
-    $ipress = $ipressModel->listar(
-        $pagina,
-        $porPagina,
-        $busqueda,
-        $estado
+    $ipress = $this->ipressModel->listar(
+        $pagina, $porPagina, $busqueda, $estado, $codUE, $red, $microred
     );
-
-    $total = $ipressModel->total(
-        $busqueda,
-        $estado
-    );
-
-    $totalPaginas = (int) ceil($total / $porPagina);
 
     $this->view('ipress/index', [
         'titulo' => 'IPRESS',
@@ -62,19 +49,31 @@ public function index(): void
         'porPagina' => $porPagina,
         'busqueda' => $busqueda,
         'estado' => $estado,
+        'codUE' => $codUE,
+        'red' => $red,
+        'microred' => $microred,
+        'unidadesEjecutoras' => $unidadesEjecutoras,
+        'redes' => $redes,
+        'microredes' => $microredes,
         'total' => $total,
         'totalPaginas' => $totalPaginas
     ]);
 }
+
 public function exportar(): void
 {
     Auth::requirePermission('IPRESS');
 
     $busqueda = trim($_GET['busqueda'] ?? '');
+    $estado = $_GET['estado'] ?? '1';
+    if (!in_array($estado, ['1', '0', 'todos'], true)) $estado = '1';
+    $codUE = trim($_GET['codUE'] ?? '');
+    $red = trim($_GET['red'] ?? '');
+    $microred = trim($_GET['microred'] ?? '');
 
     require_once BASE_PATH . '/vendor/autoload.php';
 
-    $ipress = $this->ipressModel->listarParaExportar($busqueda);
+    $ipress = $this->ipressModel->listarParaExportar($busqueda, $estado, $codUE, $red, $microred);
 
     $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();

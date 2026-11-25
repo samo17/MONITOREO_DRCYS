@@ -54,7 +54,7 @@ try {
                 EessAdscrito,
                 Provincia,
                 Distrito
-            FROM maestro_afiliados
+            FROM afiliados
             WHERE NumeroDni LIKE ?
                OR NombreAsegurado LIKE ?
             ORDER BY NombreAsegurado ASC,

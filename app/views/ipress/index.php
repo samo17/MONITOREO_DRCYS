@@ -102,111 +102,53 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
                     <div class="card-body">
 
-                        <form
-                            method="GET"
-                            action="/DRCYS/public/index.php"
-                            class="row g-2 mb-3"
-                        >
-
-                            <input
-                                type="hidden"
-                                name="route"
-                                value="ipress"
-                            >
-
-
-                            <div class="col-md-5">
-
-                                <label
-                                    for="busqueda"
-                                    class="form-label"
-                                >
-                                    Buscar IPRESS
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="busqueda"
-                                    id="busqueda"
-                                    class="form-control"
-                                    placeholder="Nombre de IPRESS o RENAES"
-                                    value="<?= e($busqueda ?? '') ?>"
-                                >
-
-                            </div>
-
-
-                            <div class="col-md-3">
-
-                                <label
-                                    for="estado"
-                                    class="form-label"
-                                >
-                                    Estado
-                                </label>
-
-                                <select
-                                    name="estado"
-                                    id="estado"
-                                    class="form-select"
-                                >
-
-                                    <option
-                                        value="1"
-                                        <?= (($estado ?? '1') === '1') ? 'selected' : '' ?>
-                                    >
-                                        Activos
-                                    </option>
-
-
-                                    <option
-                                        value="0"
-                                        <?= (($estado ?? '1') === '0') ? 'selected' : '' ?>
-                                    >
-                                        Inactivos
-                                    </option>
-
-
-                                    <option
-                                        value="todos"
-                                        <?= (($estado ?? '1') === 'todos') ? 'selected' : '' ?>
-                                    >
-                                        Todos
-                                    </option>
-
-                                </select>
-
-                            </div>
-
-
-                            <div class="col-md-4 d-flex align-items-end gap-2">
-
-                                <button
-                                    type="submit"
-                                    class="btn btn-primary"
-                                >
-                                    Buscar
-                                </button>
-
-
-                                <a
-                                    href="<?= url('ipress') ?>"
-                                    class="btn btn-secondary"
-                                >
-                                    Limpiar
-                                </a>
-
-
-                                <a
-                                    href="<?= url('ipress/exportar') ?>&busqueda=<?= urlencode($busqueda ?? '') ?>"
-                                    class="btn btn-success"
-                                >
-                                    Excel
-                                </a>
-
-                            </div>
-
-                        </form>
+                        <form method="GET" action="/DRCYS/public/index.php" class="row g-3 mb-3">
+    <input type="hidden" name="route" value="ipress">
+    <div class="col-md-3">
+        <label for="codUE" class="form-label">Unidad Ejecutora</label>
+        <select name="codUE" id="codUE" class="form-select" onchange="this.form.red.value=''; this.form.microred.value=''; this.form.submit()">
+            <option value="">Todas</option>
+            <?php foreach (($unidadesEjecutoras ?? []) as $ueItem): ?>
+                <option value="<?= e($ueItem['COD_UE']) ?>" <?= ($codUE ?? '') === (string)$ueItem['COD_UE'] ? 'selected' : '' ?>><?= e($ueItem['UE']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="red" class="form-label">Red</label>
+        <select name="red" id="red" class="form-select" <?= empty($codUE) ? 'disabled' : '' ?> onchange="this.form.microred.value=''; this.form.submit()">
+            <option value="">Todas</option>
+            <?php foreach (($redes ?? []) as $redItem): ?>
+                <option value="<?= e($redItem['RED']) ?>" <?= ($red ?? '') === (string)$redItem['RED'] ? 'selected' : '' ?>><?= e($redItem['RED']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="microred" class="form-label">Microred</label>
+        <select name="microred" id="microred" class="form-select" <?= empty($red) ? 'disabled' : '' ?> onchange="this.form.submit()">
+            <option value="">Todas</option>
+            <?php foreach (($microredes ?? []) as $microItem): ?>
+                <option value="<?= e($microItem['MICRORED']) ?>" <?= ($microred ?? '') === (string)$microItem['MICRORED'] ? 'selected' : '' ?>><?= e($microItem['MICRORED']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="busqueda" class="form-label">IPRESS</label>
+        <input type="text" name="busqueda" id="busqueda" class="form-control" placeholder="Buscar por RENAES o nombre" value="<?= e($busqueda ?? '') ?>">
+    </div>
+    <div class="col-md-3">
+        <label for="estado" class="form-label">Estado</label>
+        <select name="estado" id="estado" class="form-select">
+            <option value="1" <?= ($estado ?? '1') === '1' ? 'selected' : '' ?>>Activos</option>
+            <option value="0" <?= ($estado ?? '1') === '0' ? 'selected' : '' ?>>Inactivos</option>
+            <option value="todos" <?= ($estado ?? '1') === 'todos' ? 'selected' : '' ?>>Todos</option>
+        </select>
+    </div>
+    <div class="col-md-9 d-flex align-items-end gap-2">
+        <button type="submit" class="btn btn-primary">Buscar</button>
+        <a href="<?= url('ipress') ?>" class="btn btn-secondary">Limpiar</a>
+        <a href="<?= url('ipress/exportar') ?>&busqueda=<?= urlencode($busqueda ?? '') ?>&estado=<?= urlencode($estado ?? '1') ?>&codUE=<?= urlencode($codUE ?? '') ?>&red=<?= urlencode($red ?? '') ?>&microred=<?= urlencode($microred ?? '') ?>" class="btn btn-success">Excel</a>
+    </div>
+</form>
 
                     </div>
 
@@ -562,7 +504,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
                                             <a
                                                 class="page-link"
-                                                href="<?= url('ipress') ?>&pagina=<?= $paginaActual - 1 ?>&porPagina=<?= $porPagina ?>&busqueda=<?= urlencode($busqueda) ?>&estado=<?= urlencode($estado) ?>"
+                                                href="<?= url('ipress') ?>&pagina=<?= $paginaActual - 1 ?>&porPagina=<?= $porPagina ?>&busqueda=<?= urlencode($busqueda) ?>&estado=<?= urlencode($estado) ?>&codUE=<?= urlencode($codUE ?? '') ?>&red=<?= urlencode($red ?? '') ?>&microred=<?= urlencode($microred ?? '') ?>"
                                             >
                                                 &laquo; Anterior
                                             </a>
@@ -599,7 +541,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
                                                 <a
                                                     class="page-link"
-                                                    href="<?= url('ipress') ?>&pagina=<?= $numeroPagina ?>&porPagina=<?= $porPagina ?>&busqueda=<?= urlencode($busqueda) ?>&estado=<?= urlencode($estado) ?>"
+                                                    href="<?= url('ipress') ?>&pagina=<?= $numeroPagina ?>&porPagina=<?= $porPagina ?>&busqueda=<?= urlencode($busqueda) ?>&estado=<?= urlencode($estado) ?>&codUE=<?= urlencode($codUE ?? '') ?>&red=<?= urlencode($red ?? '') ?>&microred=<?= urlencode($microred ?? '') ?>"
                                                 >
                                                     <?= $numeroPagina ?>
                                                 </a>
@@ -620,7 +562,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
                                             <a
                                                 class="page-link"
-                                                href="<?= url('ipress') ?>&pagina=<?= $paginaActual + 1 ?>&porPagina=<?= $porPagina ?>&busqueda=<?= urlencode($busqueda) ?>&estado=<?= urlencode($estado) ?>"
+                                                href="<?= url('ipress') ?>&pagina=<?= $paginaActual + 1 ?>&porPagina=<?= $porPagina ?>&busqueda=<?= urlencode($busqueda) ?>&estado=<?= urlencode($estado) ?>&codUE=<?= urlencode($codUE ?? '') ?>&red=<?= urlencode($red ?? '') ?>&microred=<?= urlencode($microred ?? '') ?>"
                                             >
                                                 Siguiente &raquo;
                                             </a>

@@ -33,7 +33,10 @@ class Database
                 [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false
+                    PDO::ATTR_EMULATE_PREPARES => false,
+
+                    // Permitir LOAD DATA LOCAL INFILE
+                    PDO::MYSQL_ATTR_LOCAL_INFILE => true
                 ]
             );
 
@@ -41,7 +44,10 @@ class Database
 
         } catch (PDOException $e) {
 
-            die('Error de conexión con la base de datos.');
+            die(
+                'Error de conexión con la base de datos: ' .
+                $e->getMessage()
+            );
 
         }
     }

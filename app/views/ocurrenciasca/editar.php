@@ -222,6 +222,15 @@ $provinciaActual =
                             action="<?= url('ocurrenciasca/actualizar') ?>"
                         >
 
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">IAFAS de procedencia</label>
+                                    <input type="hidden" name="IdIAFAS" value="<?= (int)($ocurrencia['IdIAFAS'] ?? 0) ?>">
+                                    <input type="text" class="form-control" value="<?= e($ocurrencia['IAFAS'] ?? 'SIS') ?>" readonly>
+                                    <div class="form-text">La IAFAS de una ocurrencia existente se conserva al editar.</div>
+                                </div>
+                            </div>
+
                             <!-- =================================================
                                  CAMPOS OCULTOS
                                  ================================================= -->
@@ -274,8 +283,13 @@ $provinciaActual =
                                         name="DNI_PACIENTE"
                                         id="DNI_PACIENTE"
                                         class="form-control"
+                                        maxlength="8"
+                                        minlength="8"
+                                        pattern="[0-9]{8}"
+                                        inputmode="numeric"
                                         value="<?= e($ocurrencia['DNI_PACIENTE'] ?? '') ?>"
-                                        readonly
+                                        <?= empty($ocurrencia['IdAfiliados']) ? '' : 'readonly' ?>
+                                        required
                                     >
 
                                 </div>
@@ -294,10 +308,12 @@ $provinciaActual =
 
                                     <input
                                         type="text"
+                                        name="NombrePaciente"
                                         id="NombreAsegurado"
                                         class="form-control"
                                         value="<?= e($ocurrencia['NombreAsegurado'] ?? '') ?>"
-                                        readonly
+                                        <?= empty($ocurrencia['IdAfiliados']) ? '' : 'readonly' ?>
+                                        required
                                     >
 
                                 </div>
@@ -314,13 +330,16 @@ $provinciaActual =
                                         Sexo
                                     </label>
 
-                                    <input
-                                        type="text"
-                                        id="Sexo"
-                                        class="form-control"
-                                        value="<?= e($ocurrencia['Sexo'] ?? '') ?>"
-                                        readonly
-                                    >
+                                    <select
+                                            name="SexoPaciente"
+                                            id="Sexo"
+                                            class="form-select"
+                                            required
+                                        >
+                                            <option value="">Seleccione</option>
+                                            <option value="F" <?= strtoupper($ocurrencia['Sexo'] ?? '') === 'F' ? 'selected' : '' ?>>F</option>
+                                            <option value="M" <?= strtoupper($ocurrencia['Sexo'] ?? '') === 'M' ? 'selected' : '' ?>>M</option>
+                                        </select>
 
                                 </div>
 
@@ -342,10 +361,12 @@ $provinciaActual =
 
                                     <input
                                         type="date"
+                                        name="FechaNacimientoPaciente"
                                         id="FechaNacimiento"
                                         class="form-control"
                                         value="<?= e($ocurrencia['FechaNacimiento'] ?? '') ?>"
-                                        readonly
+                                        <?= empty($ocurrencia['IdAfiliados']) ? '' : 'readonly' ?>
+                                        required
                                     >
 
                                 </div>
@@ -365,6 +386,10 @@ $provinciaActual =
                                     <input
                                         type="text"
                                         id="Edad"
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        inputmode="numeric"
                                         class="form-control"
                                         value="<?= $edadInformativa !== '' ? e($edadInformativa) : '' ?>"
                                         readonly
@@ -387,9 +412,11 @@ $provinciaActual =
                                     <input
                                         type="text"
                                         id="EessAdscrito"
-                                        class="form-control"
+                                        class="form-control bg-light"
                                         value="<?= e($ocurrencia['EessAdscrito'] ?? '') ?>"
                                         readonly
+                                        <?= strtoupper(trim((string)($ocurrencia['IAFAS'] ?? 'SIS'))) !== 'SIS' ? 'disabled' : '' ?>
+                                        aria-disabled="<?= strtoupper(trim((string)($ocurrencia['IAFAS'] ?? 'SIS'))) !== 'SIS' ? 'true' : 'false' ?>"
                                     >
 
                                     <div class="form-text">
@@ -881,6 +908,7 @@ $provinciaActual =
                                         name="COMUNIDAD"
                                         id="COMUNIDAD"
                                         class="form-control"
+                                        readonly
                                         maxlength="150"
                                         value="<?= e($ocurrencia['COMUNIDAD'] ?? '') ?>"
                                     >
@@ -904,6 +932,7 @@ $provinciaActual =
                                         name="DIRECCION"
                                         id="DIRECCION"
                                         class="form-control"
+                                        readonly
                                         maxlength="250"
                                         value="<?= e($ocurrencia['DIRECCION'] ?? '') ?>"
                                     >
@@ -927,6 +956,7 @@ $provinciaActual =
                                         name="REFERENCIA"
                                         id="REFERENCIA"
                                         class="form-control"
+                                        readonly
                                         maxlength="250"
                                         value="<?= e($ocurrencia['REFERENCIA'] ?? '') ?>"
                                     >
@@ -1009,6 +1039,9 @@ $provinciaActual =
                                         id="DNI_RESPONSABLE"
                                         class="form-control"
                                         maxlength="8"
+                                        minlength="8"
+                                        pattern="[0-9]{8}"
+                                        inputmode="numeric"
                                         value="<?= e($ocurrencia['DNI_RESPONSABLE'] ?? '') ?>"
                                     >
 
@@ -1287,7 +1320,7 @@ function controlarDatosGestante()
     if (
         sexo === 'F' &&
         edad !== null &&
-        edad > 9 &&
+        edad >= 9 &&
         gestante === 'SI'
     ) {
 
@@ -1840,66 +1873,84 @@ document.addEventListener(
         controlarDatosGestante();
 
 
-        /* =====================================================
-           NRO. FORMATO
-           ===================================================== */
 
-        const lote =
-            document.getElementById(
-                'NroFormatoLote'
-            );
+/* =========================================================
+   NRO. FORMATO Y REGLA ESPECIAL DEL LOTE 2
+   ========================================================= */
 
-        const codigo =
-            document.getElementById(
-                'NroFormatoCodigo'
-            );
+const lote = document.getElementById('NroFormatoLote');
+const codigo = document.getElementById('NroFormatoCodigo');
+const nroFormato = document.getElementById('NroFormato');
+const dniAfiliado = document.getElementById('DNI_PACIENTE');
 
+let loteAnterior = lote ? lote.value : '';
 
-        if (lote) {
+function actualizarNroFormato() {
+    if (!lote || !codigo || !nroFormato) {
+        return;
+    }
 
-            lote.addEventListener(
-                'change',
-                actualizarNroFormato
-            );
+    const valorLote = String(lote.value || '').trim().toUpperCase();
+    const valorCodigo = String(codigo.value || '').trim();
 
+    const lotesPermitidos = ['2', 'E', '3', '8', 'R', '9'];
+
+    if (
+        valorLote === '' ||
+        !lotesPermitidos.includes(valorLote) ||
+        valorCodigo === ''
+    ) {
+        nroFormato.value = '';
+        return;
+    }
+
+    nroFormato.value = '240-' + valorLote + '-' + valorCodigo;
+}
+
+function aplicarReglaLote() {
+    if (!lote || !codigo) {
+        return;
+    }
+
+    const valorLote = String(lote.value || '').trim().toUpperCase();
+
+    if (valorLote === '2') {
+        // En edición, el código debe corresponder al DNI actual.
+        codigo.readOnly = true;
+        codigo.value = dniAfiliado
+            ? String(dniAfiliado.value || '').trim()
+            : '';
+    } else {
+        codigo.readOnly = false;
+
+        // Si se cambia desde lote 2, se elimina el DNI
+        // autocompletado para ingresar el nuevo código.
+        if (loteAnterior === '2') {
+            codigo.value = '';
         }
+    }
 
+    loteAnterior = valorLote;
+    actualizarNroFormato();
+}
 
-        if (codigo) {
+if (lote) {
+    lote.addEventListener('change', aplicarReglaLote);
+}
 
-            /*
-             * Misma restricción de Crear:
-             * máximo 10 caracteres.
-             */
-
-            codigo.addEventListener(
-                'input',
-                function ()
-                {
-
-                    if (codigo.value.length > 10) {
-
-                        codigo.value =
-                            codigo.value.substring(
-                                0,
-                                10
-                            );
-
-                    }
-
-                    actualizarNroFormato();
-
-                }
-            );
-
+if (codigo) {
+    codigo.addEventListener('input', function () {
+        if (codigo.value.length > 10) {
+            codigo.value = codigo.value.substring(0, 10);
         }
-
-
-        /*
-         * Construimos nuevamente el formato al cargar Editar.
-         */
 
         actualizarNroFormato();
+    });
+}
+
+// Aplicar la regla al abrir el formulario de edición.
+aplicarReglaLote();
+
 
 
         /* =====================================================
@@ -1984,8 +2035,495 @@ document.addEventListener(
 </script>
 
 
+<script>
+/* Reglas de validación y automatización de datos de paciente/IPRESS/responsable. */
+(function () {
+    const form = document.querySelector('form[action*="ocurrenciasca/guardar"], form[action*="ocurrenciasca/actualizar"]');
+    if (!form) return;
+
+    const byId = id => document.getElementById(id);
+    const dni = byId('DNI_PACIENTE');
+    const nombre = byId('NombreAsegurado');
+    const sexo = byId('Sexo');
+    const nacimiento = byId('FechaNacimiento');
+    const edad = byId('Edad');
+    const gestante = byId('GESTANTE');
+    const fpp = byId('FECHA_PROBABLE_PARTO');
+    const presencial = byId('PRESENCIAL');
+    const dniResponsable = byId('DNI_RESPONSABLE');
+    const personaResponsable = byId('PERSONA_RESPONSABLE');
+    const distrito = byId('DISTRITO');
+
+    // El distrito se muestra bloqueado, pero se envía su valor mediante un hidden.
+    let distritoHidden = null;
+    if (distrito) {
+        distritoHidden = form.querySelector('input[type="hidden"][name="DISTRITO"]');
+        if (!distritoHidden) {
+            distritoHidden = document.createElement('input');
+            distritoHidden.type = 'hidden';
+            distritoHidden.name = 'DISTRITO';
+            form.appendChild(distritoHidden);
+        }
+        distritoHidden.value = distrito.value || '';
+        distrito.removeAttribute('name');
+        distrito.disabled = true;
+    }
+
+    // Bloquear campos derivados de IPRESS y datos geográficos.
+    ['UE','RED','MICRORED','PROVINCIA','COMUNIDAD','DIRECCION','REFERENCIA','EessAdscrito'].forEach(id => {
+        const el = byId(id);
+        if (el) el.readOnly = true;
+    });
+
+    function calcularEdad() {
+        if (!nacimiento || !edad || !nacimiento.value) {
+            if (edad) edad.value = '';
+            return null;
+        }
+        const fecha = new Date(nacimiento.value + 'T00:00:00');
+        const hoy = new Date();
+        if (Number.isNaN(fecha.getTime()) || fecha > hoy) {
+            edad.value = '';
+            return null;
+        }
+        let anios = hoy.getFullYear() - fecha.getFullYear();
+        const mes = hoy.getMonth() - fecha.getMonth();
+        if (mes < 0 || (mes === 0 && hoy.getDate() < fecha.getDate())) anios--;
+        edad.value = String(anios);
+        return anios;
+    }
+
+    function controlarGestante() {
+        const valorSexo = String(sexo?.value || '').trim().toUpperCase();
+        const anios = calcularEdad();
+        if (sexo) sexo.value = valorSexo;
+        if (valorSexo !== 'F') {
+            if (gestante) { gestante.value = ''; gestante.disabled = true; }
+            if (fpp) { fpp.value = ''; fpp.disabled = true; }
+            return;
+        }
+        if (gestante) gestante.disabled = false;
+        const puedeFpp = !!gestante && gestante.value === 'SI' && anios !== null && anios > 9;
+        if (fpp) {
+            fpp.disabled = !puedeFpp;
+            if (!puedeFpp) fpp.value = '';
+        }
+    }
+
+    function controlarResponsable() {
+        const esPresencial = String(presencial?.value || '').trim().toUpperCase() === 'SI';
+        calcularEdad();
+        // La copia depende únicamente de Presencial = SI; aplica a SIS y Otras IAFAS,
+        // independientemente de la edad del paciente.
+        if (esPresencial) {
+            if (dniResponsable) {
+                dniResponsable.value = dni?.value || '';
+                dniResponsable.dataset.autocompletadoPaciente = '1';
+            }
+            if (personaResponsable) {
+                personaResponsable.value = nombre?.value || '';
+                personaResponsable.dataset.autocompletadoPaciente = '1';
+            }
+        } else {
+            if (dniResponsable?.dataset.autocompletadoPaciente === '1') {
+                dniResponsable.value = '';
+                delete dniResponsable.dataset.autocompletadoPaciente;
+            }
+            if (personaResponsable?.dataset.autocompletadoPaciente === '1') {
+                personaResponsable.value = '';
+                delete personaResponsable.dataset.autocompletadoPaciente;
+            }
+        }
+    }
+
+    function validarDniPaciente() {
+        if (!dni) return true;
+        dni.value = dni.value.replace(/\D/g, '').slice(0, 8);
+        dni.setCustomValidity(/^\d{8}$/.test(dni.value) ? '' : 'El DNI debe contener exactamente 8 dígitos.');
+        return dni.checkValidity();
+    }
+    function validarDniResponsable() {
+        if (!dniResponsable) return;
+        dniResponsable.value = dniResponsable.value.replace(/\D/g, '').slice(0, 8);
+        dniResponsable.setCustomValidity(dniResponsable.value === '' || /^\d{8}$/.test(dniResponsable.value) ? '' : 'El DNI del responsable debe contener 8 dígitos.');
+    }
+
+    if (dni) dni.addEventListener('input', () => { validarDniPaciente(); controlarResponsable(); });
+    if (dniResponsable) dniResponsable.addEventListener('input', validarDniResponsable);
+    if (sexo) sexo.addEventListener('input', () => {
+        sexo.value = sexo.value.toUpperCase().replace(/[^FM]/g, '').slice(0, 1);
+        controlarGestante();
+    });
+    if (nacimiento) nacimiento.addEventListener('change', () => { calcularEdad(); controlarGestante(); controlarResponsable(); });
+    if (gestante) gestante.addEventListener('change', controlarGestante);
+    if (presencial) presencial.addEventListener('change', controlarResponsable);
+    if (nombre) nombre.addEventListener('input', controlarResponsable);
+
+    // Los datos del afiliado SIS son cargados por el buscador existente.
+    document.addEventListener('click', ev => {
+        if (ev.target.closest('.btnSeleccionarAfiliado')) {
+            setTimeout(() => { calcularEdad(); controlarGestante(); controlarResponsable(); }, 150);
+        }
+    });
+    if (distrito) {
+        const observer = new MutationObserver(() => {
+            distritoHidden.value = distrito.value || '';
+        });
+        observer.observe(distrito, { childList: true, subtree: true, attributes: true });
+    }
+    if (distrito) distrito.addEventListener('change', () => { distritoHidden.value = distrito.value || ''; });
+
+    form.addEventListener('submit', ev => {
+        calcularEdad();
+        controlarGestante();
+        controlarResponsable();
+        validarDniPaciente();
+        validarDniResponsable();
+        if (!validarDniPaciente() || !form.checkValidity()) {
+            ev.preventDefault();
+            form.reportValidity();
+        }
+    });
+
+    // Inicialización con datos existentes en edición o al volver de una validación.
+    calcularEdad();
+    controlarGestante();
+    controlarResponsable();
+})();
+</script>
+
 <?php
 
 require_once __DIR__ . '/../layouts/footer.php';
 
 ?>
+
+<script>
+/* Reglas comunes SIS / Otras IAFAS */
+(function () {
+    const $ = (id) => document.getElementById(id);
+    const fecha = $('FechaNacimiento');
+    const edad = $('Edad');
+    const sexo = $('Sexo');
+    const gestante = $('GESTANTE');
+    const parto = $('FECHA_PROBABLE_PARTO');
+    const iafas = $('IdIAFAS');
+    const eessAnterior = $('EessAdscrito');
+    const presencial = $('PRESENCIAL');
+    const dniPaciente = $('DNI_PACIENTE');
+    const nombrePaciente = $('NombreAsegurado');
+    const dniResponsable = $('DNI_RESPONSABLE');
+    const personaResponsable = $('PERSONA_RESPONSABLE');
+    const distrito = $('DISTRITO');
+
+    function esSIS() {
+        if (!iafas || !iafas.value) return false;
+        const opt = iafas.options[iafas.selectedIndex];
+        return !!opt && String(opt.dataset.nombre || '').trim().toUpperCase() === 'SIS';
+    }
+
+    function calcularEdad() {
+        if (!fecha || !edad || !fecha.value) {
+            if (edad) edad.value = '';
+            actualizarGestante();
+            actualizarResponsable();
+            return null;
+        }
+        const nacimiento = new Date(fecha.value + 'T00:00:00');
+        const hoy = new Date();
+        if (Number.isNaN(nacimiento.getTime()) || nacimiento > hoy) {
+            edad.value = '';
+            actualizarGestante();
+            actualizarResponsable();
+            return null;
+        }
+        let anios = hoy.getFullYear() - nacimiento.getFullYear();
+        const mes = hoy.getMonth() - nacimiento.getMonth();
+        if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) anios--;
+        edad.value = String(anios);
+        actualizarGestante();
+        actualizarResponsable();
+        return anios;
+    }
+
+    function actualizarGestante() {
+        if (!sexo || !gestante || !parto) return;
+        const s = String(sexo.value || '').trim().toUpperCase();
+        const e = edad && edad.value !== '' ? Number(edad.value) : null;
+        const habilitar = s === 'F' && e !== null && Number.isFinite(e) && e >= 9;
+        gestante.disabled = !habilitar;
+        if (!habilitar) {
+            gestante.value = '';
+            parto.value = '';
+            parto.disabled = true;
+            return;
+        }
+        const esGestante = String(gestante.value || '').trim().toUpperCase() === 'SI';
+        parto.disabled = !esGestante;
+        if (!esGestante) parto.value = '';
+    }
+
+    function actualizarResponsable() {
+        if (!presencial || !dniPaciente || !nombrePaciente || !dniResponsable || !personaResponsable) return;
+        const esPresencial = String(presencial.value || '').trim().toUpperCase() === 'SI';
+        if (esPresencial) {
+            dniResponsable.value = dniPaciente.value || '';
+            personaResponsable.value = nombrePaciente.value || '';
+            dniResponsable.dataset.autocompletadoPaciente = '1';
+            personaResponsable.dataset.autocompletadoPaciente = '1';
+        } else {
+            if (dniResponsable.dataset.autocompletadoPaciente === '1') {
+                dniResponsable.value = '';
+                delete dniResponsable.dataset.autocompletadoPaciente;
+            }
+            if (personaResponsable.dataset.autocompletadoPaciente === '1') {
+                personaResponsable.value = '';
+                delete personaResponsable.dataset.autocompletadoPaciente;
+            }
+        }
+    }
+
+    function aplicarIAFAS() {
+        const sis = esSIS();
+        if (eessAnterior) {
+            eessAnterior.readOnly = true;
+            if (!sis) eessAnterior.value = '';
+        }
+        // Distrito debe poder seleccionarse para SIS y Otras IAFAS.
+        if (distrito) {
+            distrito.disabled = false;
+            distrito.name = 'DISTRITO';
+            const hiddenDistrito = document.querySelector('input[type="hidden"][name="DISTRITO"]');
+            if (hiddenDistrito) hiddenDistrito.remove();
+        }
+        if (sexo) {
+            sexo.disabled = false;
+            sexo.required = true;
+        }
+        calcularEdad();
+    }
+
+    if (fecha) {
+        fecha.addEventListener('input', calcularEdad);
+        fecha.addEventListener('change', calcularEdad);
+    }
+    if (sexo) {
+        sexo.addEventListener('change', actualizarGestante);
+        sexo.addEventListener('input', actualizarGestante);
+    }
+    if (gestante) gestante.addEventListener('change', actualizarGestante);
+    if (presencial) presencial.addEventListener('change', actualizarResponsable);
+    if (dniPaciente) {
+        dniPaciente.addEventListener('input', actualizarResponsable);
+        dniPaciente.addEventListener('change', actualizarResponsable);
+    }
+    if (nombrePaciente) {
+        nombrePaciente.addEventListener('input', actualizarResponsable);
+        nombrePaciente.addEventListener('change', actualizarResponsable);
+    }
+    if (iafas) iafas.addEventListener('change', aplicarIAFAS);
+
+    // Los datos SIS se rellenan por selección de afiliado mediante JS;
+    // estos eventos vuelven a ejecutar las reglas tras la carga.
+    [fecha, sexo, dniPaciente, nombrePaciente].forEach(el => {
+        if (!el) return;
+        el.addEventListener('blur', () => {
+            calcularEdad();
+            actualizarResponsable();
+        });
+    });
+
+    aplicarIAFAS();
+    calcularEdad();
+})();
+</script>
+
+
+<script>
+/* Control prioritario de Gestante / Fecha probable de parto. */
+(function () {
+    const sexo = document.getElementById('Sexo');
+    const nacimiento = document.getElementById('FechaNacimiento');
+    const edad = document.getElementById('Edad');
+    const gestante = document.getElementById('GESTANTE');
+    const fpp = document.getElementById('FECHA_PROBABLE_PARTO');
+    if (!sexo || !gestante || !fpp) return;
+
+    function calcularEdadActual() {
+        if (!nacimiento || !nacimiento.value) return null;
+        const n = new Date(nacimiento.value + 'T00:00:00');
+        const h = new Date();
+        if (Number.isNaN(n.getTime()) || n > h) return null;
+        let a = h.getFullYear() - n.getFullYear();
+        if (h.getMonth() < n.getMonth() ||
+            (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) a--;
+        if (edad) edad.value = String(a);
+        return a;
+    }
+
+    function aplicarReglaGestante() {
+        const s = String(sexo.value || '').trim().toUpperCase();
+        const a = calcularEdadActual();
+        const permitido = s === 'F' && a !== null && a >= 9;
+        gestante.disabled = !permitido;
+        if (!permitido) {
+            gestante.value = '';
+            fpp.value = '';
+            fpp.disabled = true;
+            return;
+        }
+        // Mantener la selección SI/NO; solo actualizar la fecha.
+        const respuesta = String(gestante.value || '').trim().toUpperCase();
+        fpp.disabled = respuesta !== 'SI';
+        if (respuesta !== 'SI') fpp.value = '';
+    }
+
+    // Captura primero el evento para impedir que listeners anteriores borren SI/NO.
+    document.addEventListener('change', function (ev) {
+        if ([sexo, nacimiento, gestante].includes(ev.target)) {
+            ev.stopImmediatePropagation();
+            aplicarReglaGestante();
+        }
+    }, true);
+    document.addEventListener('input', function (ev) {
+        if ([sexo, nacimiento].includes(ev.target)) {
+            ev.stopImmediatePropagation();
+            aplicarReglaGestante();
+        }
+    }, true);
+
+    aplicarReglaGestante();
+})();
+</script>
+
+
+<!-- Validación estricta de DNI: bloquea letras y símbolos antes de que aparezcan. -->
+<script>
+(function () {
+    'use strict';
+    const ids = ['DNI_PACIENTE', 'DNI_RESPONSABLE'];
+    const selectores = ids.map(id => '#' + id).join(',');
+
+    function esCampoDni(el) {
+        return el instanceof HTMLInputElement && ids.includes(el.id);
+    }
+
+    // Evita teclas no numéricas desde el teclado físico; permite navegación y atajos.
+    document.addEventListener('keydown', function (ev) {
+        if (!esCampoDni(ev.target) || ev.target.readOnly || ev.target.disabled) return;
+        const permitidas = ['Backspace','Delete','Tab','Enter','Escape','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
+        if (permitidas.includes(ev.key) || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+        if (!/^\d$/.test(ev.key)) ev.preventDefault();
+        else {
+            const el = ev.target;
+            const seleccion = el.selectionEnd - el.selectionStart;
+            if (el.value.length - seleccion >= 8) ev.preventDefault();
+        }
+    }, true);
+
+    // beforeinput bloquea letras antes de que se incorporen al valor.
+    document.addEventListener('beforeinput', function (ev) {
+        const el = ev.target;
+        if (!esCampoDni(el) || el.readOnly || el.disabled || !ev.data) return;
+        if (!/^\d+$/.test(ev.data)) ev.preventDefault();
+        else {
+            const seleccion = (el.selectionEnd || 0) - (el.selectionStart || 0);
+            if (el.value.length - seleccion + ev.data.length > 8) ev.preventDefault();
+        }
+    }, true);
+
+    // Pegar solo permite conservar dígitos; nunca introduce letras o símbolos.
+    document.addEventListener('paste', function (ev) {
+        const el = ev.target;
+        if (!esCampoDni(el) || el.readOnly || el.disabled) return;
+        ev.preventDefault();
+        const texto = (ev.clipboardData || window.clipboardData).getData('text');
+        const limpio = texto.replace(/\D/g, '');
+        const inicio = el.selectionStart || 0;
+        const fin = el.selectionEnd || 0;
+        const disponible = 8 - (el.value.length - (fin - inicio));
+        const insertar = limpio.slice(0, Math.max(0, disponible));
+        el.setRangeText(insertar, inicio, fin, 'end');
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+    }, true);
+
+    // Respaldo para dictado, autocompletado, móviles y cambios programáticos del usuario.
+    document.addEventListener('input', function (ev) {
+        const el = ev.target;
+        if (!esCampoDni(el) || el.readOnly || el.disabled) return;
+        const limpio = el.value.replace(/\D/g, '').slice(0, 8);
+        if (el.value !== limpio) {
+            const posicion = el.selectionStart;
+            el.value = limpio;
+            if (typeof posicion === 'number') {
+                const nuevaPosicion = Math.min(posicion, limpio.length);
+                try { el.setSelectionRange(nuevaPosicion, nuevaPosicion); } catch (_) {}
+            }
+        }
+        el.setCustomValidity(limpio.length === 8 ? '' : 'Ingrese exactamente 8 dígitos numéricos.');
+    }, true);
+
+    document.addEventListener('submit', function (ev) {
+        const form = ev.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        let valido = true;
+        ids.forEach(id => {
+            const el = form.querySelector('#' + id);
+            if (!el || el.disabled || el.readOnly) return;
+            el.value = el.value.replace(/\D/g, '').slice(0, 8);
+            const requerido = el.required || el.value !== '';
+            el.setCustomValidity(!requerido || /^\d{8}$/.test(el.value) ? '' : 'Ingrese exactamente 8 dígitos numéricos.');
+            if (!el.checkValidity()) valido = false;
+        });
+        if (!valido) {
+            ev.preventDefault();
+            ev.stopImmediatePropagation();
+        }
+    }, true);
+})();
+</script>
+
+
+<script>
+/* Control de campos institucionales segun IAFAS */
+(function () {
+    'use strict';
+    const selector = document.getElementById('IdIAFAS');
+    if (!selector) return;
+    const ipress = document.getElementById('IPRESS_BUSCAR');
+    const resultados = document.getElementById('resultadoIpress');
+    const idEess = document.getElementById('IdEESS');
+    const ue = document.getElementById('UE');
+    const red = document.getElementById('RED');
+    const microred = document.getElementById('MICRORED');
+    const provincia = document.getElementById('PROVINCIA');
+    const distrito = document.getElementById('DISTRITO');
+    const eessAnterior = document.getElementById('EessAdscrito');
+    function esSIS() {
+        const op = selector.options[selector.selectedIndex];
+        return !!op && String(op.dataset.nombre || '').trim().toUpperCase() === 'SIS';
+    }
+    function limpiarSelect(el, texto) {
+        if (!el) return;
+        el.innerHTML = '';
+        const op = document.createElement('option');
+        op.value = ''; op.textContent = texto; el.appendChild(op);
+    }
+    function aplicar() {
+        const seleccionada = selector.value !== '';
+        const sis = seleccionada && esSIS();
+        if (ipress) { ipress.disabled = !sis; ipress.classList.toggle('bg-light', !sis); if (!sis) ipress.value = ''; }
+        if (resultados) { resultados.innerHTML = ''; resultados.style.display = sis ? '' : 'none'; }
+        if (!sis && idEess) idEess.value = '';
+        [ue, red, microred, provincia].forEach(function (el) { if (!el) return; el.readOnly = true; el.classList.add('bg-light'); if (!sis) el.value = ''; });
+        if (distrito) {
+            distrito.disabled = !sis; distrito.classList.toggle('bg-light', !sis);
+            if (!sis) limpiarSelect(distrito, seleccionada ? 'No aplica para esta IAFAS' : 'Seleccione una IAFAS');
+            else if (distrito.options.length && distrito.options[0].textContent.indexOf('No aplica') !== -1) limpiarSelect(distrito, 'Seleccione un Distrito');
+        }
+        if (eessAnterior) { eessAnterior.readOnly = true; eessAnterior.disabled = seleccionada && !sis; eessAnterior.classList.add('bg-light'); if (!sis) eessAnterior.value = ''; }
+    }
+    selector.addEventListener('change', aplicar);
+    aplicar();
+})();
+</script>

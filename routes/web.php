@@ -25,6 +25,10 @@ return [
         'controller' => 'DashboardController',
         'method'     => 'index'
     ],
+    'dashboard/exportar' => [
+        'controller' => 'DashboardController',
+        'method'     => 'exportar'
+    ],
     // usuarios
     'usuarios' => [
     'controller' => 'UsuariosController',
@@ -84,6 +88,35 @@ return [
     'controller' => 'UsuariosController',
     'method' => 'cambiarEstado'
 ],
+
+// IPRESS Consulta (solo lectura)
+'ipress_consulta' => [
+    'controller' => 'IpressConsultaController',
+    'method' => 'index'
+],
+'ipress_consulta/detalle' => [
+    'controller' => 'IpressConsultaController',
+    'method' => 'detalle'
+],
+'ipress_consulta/exportar' => [
+    'controller' => 'IpressConsultaController',
+    'method' => 'exportar'
+],
+
+// Afiliados Consulta (solo lectura)
+'afiliados_consulta' => [
+    'controller' => 'AfiliadosConsultaController',
+    'method' => 'index'
+],
+'afiliados_consulta/detalle' => [
+    'controller' => 'AfiliadosConsultaController',
+    'method' => 'detalle'
+],
+'afiliados_consulta/exportar' => [
+    'controller' => 'AfiliadosConsultaController',
+    'method' => 'exportar'
+],
+
 // Afiliados
 'afiliados' => [
     'controller' => 'AfiliadosController',
@@ -94,6 +127,31 @@ return [
     'controller' => 'AfiliadosController',
     'method' => 'detalle'
 ],
+'iafas' => [
+    'controller' => 'IAFASController',
+    'method' => 'index'
+],
+'iafas/crear' => [
+    'controller' => 'IAFASController',
+    'method' => 'crear'
+],
+'iafas/guardar' => [
+    'controller' => 'IAFASController',
+    'method' => 'guardar'
+],
+'iafas/editar' => [
+    'controller' => 'IAFASController',
+    'method' => 'editar'
+],
+'iafas/actualizar' => [
+    'controller' => 'IAFASController',
+    'method' => 'actualizar'
+],
+'iafas/cambiar-estado' => [
+    'controller' => 'IAFASController',
+    'method' => 'cambiarEstado'
+],
+
 'tiposocurrencia' => [
     'controller' => 'TiposOcurrenciaController',
     'method' => 'index'
@@ -126,6 +184,10 @@ return [
     'controller' => 'OcurrenciasCAController',
     'method' => 'index'
 ],
+'ocurrenciasca/detalle' => [
+    'controller' => 'OcurrenciasCAController',
+    'method' => 'detalle'
+],
 'ocurrenciasca/crear' => [
     'controller' => 'OcurrenciasCAController',
     'method' => 'crear'
@@ -151,6 +213,26 @@ return [
 'afiliados/exportar' => [
     'controller' => 'AfiliadosController',
     'method' => 'exportar'
+],
+
+'afiliados/cargar' => [
+    'controller' => 'AfiliadosController',
+    'method' => 'cargar'
+],
+
+'afiliados/analizar' => [
+    'controller' => 'AfiliadosController',
+    'method' => 'analizarCsv'
+],
+
+'afiliados/cargar-csv' => [
+    'controller' => 'AfiliadosController',
+    'method' => 'cargarCsv'
+],
+
+'afiliados/sincronizar' => [
+    'controller' => 'AfiliadosController',
+    'method' => 'sincronizar'
 ],
 
 // Digitadores
@@ -193,4 +275,16 @@ return [
     'controller' => 'DigitadoresController',
     'method' => 'exportar'
 ],
+
+// Módulo Maestros
+'maestros' => [
+    'controller' => 'MaestrosController',
+    'method'     => 'index'
+],
+
+'maestros/cargar' => [
+    'controller' => 'MaestrosController',
+    'method'     => 'cargarAfiliados'
+],
+
 ];

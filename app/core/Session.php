@@ -89,4 +89,34 @@ public static function flash(
 
     $_SESSION['_flash'][$key] = $value;
 }
+
+
+/**
+ * Recupera un mensaje temporal y lo elimina.
+ */
+public static function getFlash(
+    string $key,
+    mixed $default = null
+): mixed {
+    self::start();
+
+    if (
+        !isset($_SESSION['_flash']) ||
+        !array_key_exists($key, $_SESSION['_flash'])
+    ) {
+        return $default;
+    }
+
+    $value = $_SESSION['_flash'][$key];
+
+    unset($_SESSION['_flash'][$key]);
+
+    if (empty($_SESSION['_flash'])) {
+        unset($_SESSION['_flash']);
+    }
+
+    return $value;
+}
+
+
 }

@@ -9,6 +9,7 @@ class OcurrenciaCA extends Model
         ?string $dniResponsableAfiliacion = null,
         ?string $fechaInicio = null,
         ?string $fechaFin = null,
+        ?string $codUE = null,
         int $limite = 10,
         int $offset = 0
     ): array {
@@ -17,6 +18,10 @@ class OcurrenciaCA extends Model
                     o.IdOcurrencia,
                     o.FechaRegistro,
                     o.IdAfiliados,
+                    o.IdIAFAS,
+                    o.NombrePaciente,
+                    o.SexoPaciente,
+                    o.FechaNacimientoPaciente,
                     o.DNI_PACIENTE,
                     o.NroFormato,
                     o.FECHA_PROBABLE_PARTO,
@@ -34,7 +39,20 @@ class OcurrenciaCA extends Model
                     o.FONO_RESPONSABLE,
                     o.DNI_RESPONSABLE_AFILIACION,
 
-                    a.NombreAsegurado,
+                    COALESCE(a.NombreAsegurado, o.NombrePaciente) AS NombreAsegurado,
+                    ia.Nombre AS IAFAS,
+
+                    (
+                        SELECT GROUP_CONCAT(
+                            t.Descripcion
+                            ORDER BY t.Descripcion
+                            SEPARATOR ', '
+                        )
+                        FROM OcurrenciasCA_Detalle d
+                        INNER JOIN TiposOcurrencia t
+                            ON t.IdTipoOcurrencia = d.IdTipoOcurrencia
+                        WHERE d.IdOcurrencia = o.IdOcurrencia
+                    ) AS TiposOcurrencia,
 
                     i.IPRESS_ATENC,
 
@@ -44,8 +62,11 @@ class OcurrenciaCA extends Model
 
                 FROM OcurrenciasCA o
 
-                INNER JOIN maestro_afiliados a
+                LEFT JOIN afiliados a
                     ON a.IdAfiliados = o.IdAfiliados
+
+                LEFT JOIN iafas ia
+                    ON ia.IdIAFAS = o.IdIAFAS
 
                 LEFT JOIN ipress i
                     ON i.IdEESS = o.IdEESS
@@ -63,7 +84,7 @@ class OcurrenciaCA extends Model
 
             $condiciones[] = "(
                 o.DNI_PACIENTE LIKE ?
-                OR a.NombreAsegurado LIKE ?
+                OR COALESCE(a.NombreAsegurado, o.NombrePaciente) LIKE ?
                 OR o.NroFormato LIKE ?
                 OR o.COMUNIDAD LIKE ?
                 OR o.PERSONA_RESPONSABLE LIKE ?
@@ -130,6 +151,17 @@ class OcurrenciaCA extends Model
         }
 
         /*
+         * Filtro por Unidad Ejecutora
+         */
+        if (
+            $codUE !== null &&
+            $codUE !== ''
+        ) {
+            $condiciones[] = "i.COD_UE = ?";
+            $parametros[] = $codUE;
+        }
+
+        /*
          * Aplicar condiciones
          */
         if (!empty($condiciones)) {
@@ -191,15 +223,22 @@ class OcurrenciaCA extends Model
         string $buscar = '',
         ?string $dniResponsableAfiliacion = null,
         ?string $fechaInicio = null,
-        ?string $fechaFin = null
+        ?string $fechaFin = null,
+        ?string $codUE = null
     ): int {
 
         $sql = "SELECT COUNT(*)
 
                 FROM OcurrenciasCA o
 
-                INNER JOIN maestro_afiliados a
+                LEFT JOIN afiliados a
                     ON a.IdAfiliados = o.IdAfiliados
+
+                LEFT JOIN iafas ia
+                    ON ia.IdIAFAS = o.IdIAFAS
+
+                LEFT JOIN ipress i
+                    ON i.IdEESS = o.IdEESS
 
                 LEFT JOIN Usuarios u
                     ON u.DNI = o.DNI_RESPONSABLE_AFILIACION";
@@ -214,7 +253,7 @@ class OcurrenciaCA extends Model
 
             $condiciones[] = "(
                 o.DNI_PACIENTE LIKE ?
-                OR a.NombreAsegurado LIKE ?
+                OR COALESCE(a.NombreAsegurado, o.NombrePaciente) LIKE ?
                 OR o.NroFormato LIKE ?
                 OR o.COMUNIDAD LIKE ?
                 OR o.PERSONA_RESPONSABLE LIKE ?
@@ -281,6 +320,17 @@ class OcurrenciaCA extends Model
         }
 
         /*
+         * Filtro por Unidad Ejecutora
+         */
+        if (
+            $codUE !== null &&
+            $codUE !== ''
+        ) {
+            $condiciones[] = "i.COD_UE = ?";
+            $parametros[] = $codUE;
+        }
+
+        /*
          * Aplicar condiciones
          */
         if (!empty($condiciones)) {
@@ -310,6 +360,10 @@ class OcurrenciaCA extends Model
                     o.IdOcurrencia,
                     o.FechaRegistro,
                     o.IdAfiliados,
+                    o.IdIAFAS,
+                    o.NombrePaciente,
+                    o.SexoPaciente,
+                    o.FechaNacimientoPaciente,
                     o.DNI_PACIENTE,
                     o.NroFormato,
                     o.FECHA_PROBABLE_PARTO,
@@ -327,23 +381,43 @@ class OcurrenciaCA extends Model
                     o.FONO_RESPONSABLE,
                     o.DNI_RESPONSABLE_AFILIACION,
 
-                    a.NumeroDni,
-                    a.NombreAsegurado,
-                    a.Sexo,
-                    a.FechaNacimiento,
+                    COALESCE(a.NumeroDni, o.DNI_PACIENTE) AS NumeroDni,
+                    COALESCE(a.NombreAsegurado, o.NombrePaciente) AS NombreAsegurado,
+                    COALESCE(a.Sexo, o.SexoPaciente) AS Sexo,
+                    COALESCE(a.FechaNacimiento, o.FechaNacimientoPaciente) AS FechaNacimiento,
+                    ia.Nombre AS IAFAS,
                     a.EessAdscrito,
                     a.Provincia,
                     a.Distrito,
 
-                    i.IPRESS_ATENC
+                    i.IPRESS_ATENC,
+                    u.Nombres AS NombresResponsableAfiliacion,
+                    u.Apellidos AS ApellidosResponsableAfiliacion,
+                    (
+                        SELECT GROUP_CONCAT(
+                            t.Descripcion
+                            ORDER BY t.Descripcion
+                            SEPARATOR ', '
+                        )
+                        FROM OcurrenciasCA_Detalle d
+                        INNER JOIN TiposOcurrencia t
+                            ON t.IdTipoOcurrencia = d.IdTipoOcurrencia
+                        WHERE d.IdOcurrencia = o.IdOcurrencia
+                    ) AS TiposOcurrencia
 
                 FROM OcurrenciasCA o
 
-                INNER JOIN maestro_afiliados a
+                LEFT JOIN afiliados a
                     ON a.IdAfiliados = o.IdAfiliados
+
+                LEFT JOIN iafas ia
+                    ON ia.IdIAFAS = o.IdIAFAS
 
                 LEFT JOIN ipress i
                     ON i.IdEESS = o.IdEESS
+
+                LEFT JOIN Usuarios u
+                    ON u.DNI = o.DNI_RESPONSABLE_AFILIACION
 
                 WHERE o.IdOcurrencia = ?
 
@@ -362,7 +436,7 @@ class OcurrenciaCA extends Model
 
 
     public function crearConTipos(
-        int $idAfiliados,
+        ?int $idAfiliados,
         string $dniPaciente,
         ?string $fechaProbableParto,
         ?string $comunidad,
@@ -379,7 +453,11 @@ class OcurrenciaCA extends Model
         ?string $gestante = null,
         ?string $emergencias = null,
         ?string $presencial = null,
-        ?string $distrito = null
+        ?string $distrito = null,
+        ?int $idIAFAS = null,
+        ?string $nombrePaciente = null,
+        ?string $sexoPaciente = null,
+        ?string $fechaNacimientoPaciente = null
     ): int {
 
         try {
@@ -388,7 +466,11 @@ class OcurrenciaCA extends Model
 
             $sql = "INSERT INTO OcurrenciasCA (
                         IdAfiliados,
+                        IdIAFAS,
                         DNI_PACIENTE,
+                        NombrePaciente,
+                        SexoPaciente,
+                        FechaNacimientoPaciente,
                         NroFormato,
                         FECHA_PROBABLE_PARTO,
                         GESTANTE,
@@ -404,13 +486,17 @@ class OcurrenciaCA extends Model
                         DNI_RESPONSABLE,
                         FONO_RESPONSABLE,
                         DNI_RESPONSABLE_AFILIACION
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $stmt = $this->db->prepare($sql);
 
             $stmt->execute([
                 $idAfiliados,
+                $idIAFAS,
                 $dniPaciente,
+                $nombrePaciente,
+                $sexoPaciente,
+                $fechaNacimientoPaciente,
                 $nroFormato,
                 $fechaProbableParto,
                 $gestante,
@@ -467,7 +553,7 @@ class OcurrenciaCA extends Model
 
     public function actualizar(
         int $idOcurrencia,
-        int $idAfiliados,
+        ?int $idAfiliados,
         string $dniPaciente,
         ?string $fechaProbableParto,
         ?string $comunidad,
@@ -482,13 +568,21 @@ class OcurrenciaCA extends Model
         ?string $gestante = null,
         ?string $emergencias = null,
         ?string $presencial = null,
-        ?string $distrito = null
+        ?string $distrito = null,
+        ?int $idIAFAS = null,
+        ?string $nombrePaciente = null,
+        ?string $sexoPaciente = null,
+        ?string $fechaNacimientoPaciente = null
     ): bool {
 
         $sql = "UPDATE OcurrenciasCA
                 SET
                     IdAfiliados = ?,
+                    IdIAFAS = ?,
                     DNI_PACIENTE = ?,
+                    NombrePaciente = ?,
+                    SexoPaciente = ?,
+                    FechaNacimientoPaciente = ?,
                     NroFormato = ?,
                     FECHA_PROBABLE_PARTO = ?,
                     GESTANTE = ?,
@@ -509,7 +603,11 @@ class OcurrenciaCA extends Model
 
         return $stmt->execute([
             $idAfiliados,
+            $idIAFAS,
             $dniPaciente,
+            $nombrePaciente,
+            $sexoPaciente,
+            $fechaNacimientoPaciente,
             $nroFormato,
             $fechaProbableParto,
             $gestante,
@@ -528,6 +626,39 @@ class OcurrenciaCA extends Model
         ]);
     }
 
+
+    public function listarIafasActivas(): array
+    {
+        $stmt = $this->db->query("SELECT IdIAFAS, Nombre FROM iafas WHERE Estado = 1 ORDER BY Nombre ASC");
+        return $stmt->fetchAll();
+    }
+
+    public function buscarIAFAS(int $idIAFAS): ?array
+    {
+        $stmt = $this->db->prepare("SELECT IdIAFAS, Nombre, Estado FROM iafas WHERE IdIAFAS = ? LIMIT 1");
+        $stmt->execute([$idIAFAS]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function existeDuplicadoPorDNI(int $idIAFAS, string $dni, array $tipos, ?string $fecha = null, ?int $idExcluir = null): bool
+    {
+        if (!$tipos) return false;
+        $fecha = $fecha ?: date('Y-m-d');
+        $marks = implode(',', array_fill(0, count($tipos), '?'));
+        $sql = "SELECT 1 FROM OcurrenciasCA o
+                INNER JOIN OcurrenciasCA_Detalle d ON d.IdOcurrencia = o.IdOcurrencia
+                WHERE o.IdIAFAS = ? AND o.DNI_PACIENTE = ?
+                  AND DATE(o.FechaRegistro) = DATE(?)
+                  AND d.IdTipoOcurrencia IN ($marks)";
+        $params = [$idIAFAS, $dni, $fecha];
+        foreach ($tipos as $tipo) $params[] = (int)$tipo;
+        if ($idExcluir !== null) { $sql .= " AND o.IdOcurrencia <> ?"; $params[] = $idExcluir; }
+        $sql .= " LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return (bool)$stmt->fetchColumn();
+    }
 
     public function listarTipos(
     int $idOcurrencia
@@ -607,6 +738,25 @@ class OcurrenciaCA extends Model
     }
 
 
+    public function listarUnidadesEjecutoras(): array
+    {
+        $sql = "SELECT DISTINCT
+                    TRIM(i.COD_UE) AS COD_UE,
+                    TRIM(i.UE) AS UE
+                FROM OcurrenciasCA o
+                INNER JOIN ipress i
+                    ON i.IdEESS = o.IdEESS
+                WHERE i.COD_UE IS NOT NULL
+                  AND TRIM(i.COD_UE) <> ''
+                ORDER BY TRIM(i.UE) ASC, TRIM(i.COD_UE) ASC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+
  public function listarResponsablesAfiliacion(): array
 {
     $sql = "SELECT DISTINCT
@@ -636,4 +786,55 @@ class OcurrenciaCA extends Model
 
     return $stmt->fetchAll();
 }
+
+
+    /**
+     * Comprueba si el paciente ya tiene registrado alguno de los tipos
+     * indicados en la misma fecha. En edición, permite excluir el registro
+     * que se está modificando.
+     *
+     * Si no se indica fecha, se utiliza la fecha actual para nuevos registros.
+     */
+    public function existeDuplicado(
+        int $idAfiliados,
+        array $tipos,
+        ?string $fechaRegistro = null,
+        ?int $idOcurrenciaExcluir = null
+    ): bool {
+        if (empty($tipos)) {
+            return false;
+        }
+
+        $fecha = ($fechaRegistro !== null && trim($fechaRegistro) !== '')
+            ? $fechaRegistro
+            : date('Y-m-d');
+
+        $marcadores = implode(',', array_fill(0, count($tipos), '?'));
+
+        $sql = "SELECT 1
+                FROM OcurrenciasCA o
+                INNER JOIN OcurrenciasCA_Detalle d
+                    ON d.IdOcurrencia = o.IdOcurrencia
+                WHERE o.IdAfiliados = ?
+                  AND DATE(o.FechaRegistro) = DATE(?)
+                  AND d.IdTipoOcurrencia IN ($marcadores)";
+
+        $parametros = [$idAfiliados, $fecha];
+        foreach ($tipos as $idTipo) {
+            $parametros[] = (int) $idTipo;
+        }
+
+        if ($idOcurrenciaExcluir !== null) {
+            $sql .= " AND o.IdOcurrencia <> ?";
+            $parametros[] = $idOcurrenciaExcluir;
+        }
+
+        $sql .= " LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($parametros);
+
+        return (bool) $stmt->fetchColumn();
+    }
+
 }

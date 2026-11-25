@@ -38,6 +38,36 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
                 </div>
 
+                
+                <?php
+                $mensajeSuccess = \Session::getFlash('success');
+                $mensajeError = \Session::getFlash('error');
+                ?>
+
+                <?php if ($mensajeSuccess): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?= e($mensajeSuccess) ?>
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert"
+                            aria-label="Cerrar"
+                        ></button>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($mensajeError): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?= e($mensajeError) ?>
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert"
+                            aria-label="Cerrar"
+                        ></button>
+                    </div>
+                <?php endif; ?>
+
 
                 <!-- Filtros -->
                 <div class="card shadow-sm mb-4">
@@ -274,6 +304,29 @@ require_once __DIR__ . '/../layouts/navbar.php';
                                         Exportar CSV
                                     </a>
 
+                                    
+                                    <button
+                                        type="submit"
+                                        form="formSincronizarComparando"
+                                        class="btn btn-success"
+                                    >
+                                        Sincronizar comparando
+                                    </button>
+
+                                    <?php $puedeSincronizarDesdeCero = ((int) ($totalGlobalAfiliados ?? 0) === 0); ?>
+                                    <button
+                                        type="submit"
+                                        form="formSincronizarDesdeCero"
+                                        class="btn btn-outline-danger"
+                                        <?= $puedeSincronizarDesdeCero ? '' : 'disabled' ?>
+                                        title="<?= $puedeSincronizarDesdeCero
+                                            ? 'La tabla afiliados está vacía; puede realizar la carga inicial.'
+                                            : 'Deshabilitado: la tabla afiliados ya contiene registros.' ?>"
+                                    >
+                                        Sincronizar desde cero
+                                    </button>
+
+
                                     <!-- Total -->
                                     <div class="alert alert-danger d-inline-block ms-2 mb-0 py-2 px-3">
                                         <strong>Afiliados:</strong>
@@ -284,6 +337,25 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
                             </div>
 
+                        </form>
+
+                        <!-- Formularios independientes para evitar formularios anidados -->
+                        <form
+                            id="formSincronizarComparando"
+                            method="POST"
+                            action="index.php?route=afiliados/sincronizar"
+                            onsubmit="return confirm('¿Ejecutar la sincronización comparativa? Se insertarán registros nuevos y se actualizarán coincidencias según las reglas existentes.');"
+                        >
+                            <input type="hidden" name="modo_sincronizacion" value="comparar">
+                        </form>
+
+                        <form
+                            id="formSincronizarDesdeCero"
+                            method="POST"
+                            action="index.php?route=afiliados/sincronizar"
+                            onsubmit="return confirm('¿Iniciar la carga desde cero? Solo funciona si afiliados está vacía. Insertará directamente desde m_afiliados por lotes, sin comparar registros.');"
+                        >
+                            <input type="hidden" name="modo_sincronizacion" value="desde_cero">
                         </form>
 
                     </div>

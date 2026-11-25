@@ -31,7 +31,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
                     <div>
 
                         <h1 class="h3 mb-1">
-                            Ocurrencias CA
+                            Ocurrencias - Central de Afiliación
                         </h1>
 
                         <p class="text-muted mb-0">
@@ -158,6 +158,52 @@ require_once __DIR__ . '/../layouts/navbar.php';
                             </div>
 
 
+                            <!-- Unidad Ejecutora -->
+                            <div class="col-md-6">
+
+                                <label
+                                    for="cod_ue"
+                                    class="form-label"
+                                >
+                                    Unidad Ejecutora
+                                </label>
+
+                                <select
+                                    name="cod_ue"
+                                    id="cod_ue"
+                                    class="form-select"
+                                >
+
+                                    <option value="">
+                                        Todas las unidades ejecutoras
+                                    </option>
+
+                                    <?php foreach (($unidadesEjecutoras ?? []) as $unidad): ?>
+
+                                        <?php
+                                        $codigoUE = $unidad['COD_UE'] ?? '';
+                                        $nombreUE = $unidad['UE'] ?? '';
+                                        ?>
+
+                                        <option
+                                            value="<?= e($codigoUE) ?>"
+                                            <?= (
+                                                ($codUE ?? '') === $codigoUE
+                                            )
+                                                ? 'selected'
+                                                : ''
+                                            ?>
+                                        >
+                                            <?= e($codigoUE) ?> - <?= e($nombreUE) ?>
+                                        </option>
+
+                                    <?php endforeach; ?>
+
+                                </select>
+
+                            </div>
+
+
                             <!-- Fecha inicio -->
                             <div class="col-md-3">
 
@@ -220,7 +266,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
 
                                 <a
-                                    href="index.php?route=ocurrenciasca/exportar-excel&buscar=<?= urlencode($buscar ?? '') ?>&dni_responsable_afiliacion=<?= urlencode($dniResponsableAfiliacion ?? '') ?>&fecha_inicio=<?= urlencode($fechaInicio ?? '') ?>&fecha_fin=<?= urlencode($fechaFin ?? '') ?>"
+                                    href="index.php?route=ocurrenciasca/exportar-excel&buscar=<?= urlencode($buscar ?? '') ?>&dni_responsable_afiliacion=<?= urlencode($dniResponsableAfiliacion ?? '') ?>&cod_ue=<?= urlencode($codUE ?? '') ?>&fecha_inicio=<?= urlencode($fechaInicio ?? '') ?>&fecha_fin=<?= urlencode($fechaFin ?? '') ?>"
                                     class="btn btn-success"
                                 >
                                     Descargar Excel
@@ -250,6 +296,10 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
                                         <th>
                                             Asegurado
+                                        </th>
+
+                                        <th>
+                                            IAFAS
                                         </th>
 
                                         <th>
@@ -321,6 +371,10 @@ require_once __DIR__ . '/../layouts/navbar.php';
                                                 </td>
 
                                                 <td>
+                                                    <?= e($ocurrencia['IAFAS'] ?? '') ?>
+                                                </td>
+
+                                                <td>
                                                     <?= e($ocurrencia['NroFormato'] ?? '') ?>
                                                 </td>
 
@@ -362,6 +416,13 @@ require_once __DIR__ . '/../layouts/navbar.php';
                                                 </td>
 
                                                 <td class="text-center">
+
+                                                    <a
+                                                        href="<?= url('ocurrenciasca/detalle') ?>&id=<?= (int) $ocurrencia['IdOcurrencia'] ?>"
+                                                        class="btn btn-sm btn-info me-1"
+                                                    >
+                                                        Ver
+                                                    </a>
 
                                                     <a
                                                         href="<?= url('ocurrenciasca/editar') ?>&id=<?= (int) $ocurrencia['IdOcurrencia'] ?>"
@@ -415,7 +476,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
                                             <a
                                                 class="page-link"
-                                                href="index.php?route=ocurrenciasca&buscar=<?= urlencode($buscar ?? '') ?>&dni_responsable_afiliacion=<?= urlencode($dniResponsableAfiliacion ?? '') ?>&fecha_inicio=<?= urlencode($fechaInicio ?? '') ?>&fecha_fin=<?= urlencode($fechaFin ?? '') ?>&pagina=<?= (($pagina ?? 1) - 1) ?>"
+                                                href="index.php?route=ocurrenciasca&buscar=<?= urlencode($buscar ?? '') ?>&dni_responsable_afiliacion=<?= urlencode($dniResponsableAfiliacion ?? '') ?>&cod_ue=<?= urlencode($codUE ?? '') ?>&fecha_inicio=<?= urlencode($fechaInicio ?? '') ?>&fecha_fin=<?= urlencode($fechaFin ?? '') ?>&pagina=<?= (($pagina ?? 1) - 1) ?>"
                                             >
                                                 &laquo; Anterior
                                             </a>
@@ -443,7 +504,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
                                             <a
                                                 class="page-link"
-                                                href="index.php?route=ocurrenciasca&buscar=<?= urlencode($buscar ?? '') ?>&dni_responsable_afiliacion=<?= urlencode($dniResponsableAfiliacion ?? '') ?>&fecha_inicio=<?= urlencode($fechaInicio ?? '') ?>&fecha_fin=<?= urlencode($fechaFin ?? '') ?>&pagina=<?= $i ?>"
+                                                href="index.php?route=ocurrenciasca&buscar=<?= urlencode($buscar ?? '') ?>&dni_responsable_afiliacion=<?= urlencode($dniResponsableAfiliacion ?? '') ?>&cod_ue=<?= urlencode($codUE ?? '') ?>&fecha_inicio=<?= urlencode($fechaInicio ?? '') ?>&fecha_fin=<?= urlencode($fechaFin ?? '') ?>&pagina=<?= $i ?>"
                                             >
                                                 <?= $i ?>
                                             </a>
@@ -459,7 +520,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
                                             <a
                                                 class="page-link"
-                                                href="index.php?route=ocurrenciasca&buscar=<?= urlencode($buscar ?? '') ?>&dni_responsable_afiliacion=<?= urlencode($dniResponsableAfiliacion ?? '') ?>&fecha_inicio=<?= urlencode($fechaInicio ?? '') ?>&fecha_fin=<?= urlencode($fechaFin ?? '') ?>&pagina=<?= (($pagina ?? 1) + 1) ?>"
+                                                href="index.php?route=ocurrenciasca&buscar=<?= urlencode($buscar ?? '') ?>&dni_responsable_afiliacion=<?= urlencode($dniResponsableAfiliacion ?? '') ?>&cod_ue=<?= urlencode($codUE ?? '') ?>&fecha_inicio=<?= urlencode($fechaInicio ?? '') ?>&fecha_fin=<?= urlencode($fechaFin ?? '') ?>&pagina=<?= (($pagina ?? 1) + 1) ?>"
                                             >
                                                 Siguiente &raquo;
                                             </a>

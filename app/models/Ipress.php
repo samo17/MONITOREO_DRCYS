@@ -11,124 +11,88 @@ public function listar(
     int $pagina = 1,
     int $porPagina = 10,
     string $busqueda = '',
-    string $estado = '1'
+    string $estado = '1',
+    string $codUE = '',
+    string $red = '',
+    string $microred = ''
 ): array {
-
     $pagina = max(1, $pagina);
-
     $opciones = [5, 10, 20, 50, 100];
-
     if (!in_array($porPagina, $opciones, true)) {
         $porPagina = 10;
     }
-
     $offset = ($pagina - 1) * $porPagina;
-
-    $sql = "SELECT
-                IdEESS,
-                RENAES,
-                IPRESS_ATENC,
-                TIPO,
-                NIVEL,
-                CLAS_NOCLAS,
-                COD_PPDD,
-                COD_UE,
-                UE,
-                RED,
-                MICRORED,
-                PROVINCIA,
-                DISTRITO,
-                ESTADO,
-                GRUPO
-            FROM ipress
-            WHERE 1=1";
-
+    $sql = "SELECT IdEESS, RENAES, IPRESS_ATENC, TIPO, NIVEL, CLAS_NOCLAS,
+                   COD_PPDD, COD_UE, UE, RED, MICRORED, PROVINCIA, DISTRITO,
+                   ESTADO, GRUPO
+            FROM ipress WHERE 1=1";
     $parametros = [];
-
-    /*
-     * Filtro por estado
-     */
     if ($estado === '1') {
-
         $sql .= " AND ESTADO = 1";
-
     } elseif ($estado === '0') {
-
         $sql .= " AND ESTADO = 0";
     }
-
-    /*
-     * Filtro por búsqueda
-     */
+    if ($codUE !== '') {
+        $sql .= " AND COD_UE = ?";
+        $parametros[] = $codUE;
+    }
+    if ($red !== '') {
+        $sql .= " AND RED = ?";
+        $parametros[] = $red;
+    }
+    if ($microred !== '') {
+        $sql .= " AND MICRORED = ?";
+        $parametros[] = $microred;
+    }
     if ($busqueda !== '') {
-
-        $sql .= " AND (
-                    IPRESS_ATENC LIKE ?
-                    OR RENAES LIKE ?
-                )";
-
+        $sql .= " AND (IPRESS_ATENC LIKE ? OR RENAES LIKE ?)";
         $texto = '%' . $busqueda . '%';
-
         $parametros[] = $texto;
         $parametros[] = $texto;
     }
-
     $sql .= " ORDER BY CAST(RENAES AS UNSIGNED) ASC
-              LIMIT " . (int) $porPagina . "
-              OFFSET " . (int) $offset;
-
+              LIMIT " . (int) $porPagina . " OFFSET " . (int) $offset;
     $stmt = $this->db->prepare($sql);
     $stmt->execute($parametros);
-
     return $stmt->fetchAll();
 }
 
-
 public function total(
     string $busqueda = '',
-    string $estado = '1'
+    string $estado = '1',
+    string $codUE = '',
+    string $red = '',
+    string $microred = ''
 ): int {
-
-    $sql = "SELECT COUNT(*)
-            FROM ipress
-            WHERE 1=1";
-
+    $sql = "SELECT COUNT(*) FROM ipress WHERE 1=1";
     $parametros = [];
-
-    /*
-     * Filtro por estado
-     */
     if ($estado === '1') {
-
         $sql .= " AND ESTADO = 1";
-
     } elseif ($estado === '0') {
-
         $sql .= " AND ESTADO = 0";
     }
-
-    /*
-     * Filtro por búsqueda
-     */
+    if ($codUE !== '') {
+        $sql .= " AND COD_UE = ?";
+        $parametros[] = $codUE;
+    }
+    if ($red !== '') {
+        $sql .= " AND RED = ?";
+        $parametros[] = $red;
+    }
+    if ($microred !== '') {
+        $sql .= " AND MICRORED = ?";
+        $parametros[] = $microred;
+    }
     if ($busqueda !== '') {
-
-        $sql .= " AND (
-                    IPRESS_ATENC LIKE ?
-                    OR RENAES LIKE ?
-                )";
-
+        $sql .= " AND (IPRESS_ATENC LIKE ? OR RENAES LIKE ?)";
         $texto = '%' . $busqueda . '%';
-
         $parametros[] = $texto;
         $parametros[] = $texto;
     }
-
     $stmt = $this->db->prepare($sql);
     $stmt->execute($parametros);
-
     return (int) $stmt->fetchColumn();
 }
-
 
     /**
      * Busca una IPRESS activa por IdEESS.
@@ -168,43 +132,46 @@ public function total(
 
         return $resultado ?: null;
     }
-public function listarParaExportar(string $busqueda = ''): array
-{
-    $sql = "SELECT
-                RENAES,
-                IPRESS_ATENC,
-                TIPO,
-                NIVEL,
-                UE,
-                RED,
-                MICRORED,
-                PROVINCIA,
-                DISTRITO,
-                ESTADO
-            FROM ipress
-            WHERE ESTADO = 1";
-
+public function listarParaExportar(
+    string $busqueda = '',
+    string $estado = '1',
+    string $codUE = '',
+    string $red = '',
+    string $microred = ''
+): array {
+    $sql = "SELECT RENAES, IPRESS_ATENC, TIPO, NIVEL, UE, RED, MICRORED,
+                   PROVINCIA, DISTRITO, ESTADO
+            FROM ipress WHERE 1=1";
     $parametros = [];
-
+    if ($estado === '1') {
+        $sql .= " AND ESTADO = 1";
+    } elseif ($estado === '0') {
+        $sql .= " AND ESTADO = 0";
+    }
+    if ($codUE !== '') {
+        $sql .= " AND COD_UE = ?";
+        $parametros[] = $codUE;
+    }
+    if ($red !== '') {
+        $sql .= " AND RED = ?";
+        $parametros[] = $red;
+    }
+    if ($microred !== '') {
+        $sql .= " AND MICRORED = ?";
+        $parametros[] = $microred;
+    }
     if ($busqueda !== '') {
-        $sql .= " AND (
-                    IPRESS_ATENC LIKE ?
-                    OR RENAES LIKE ?
-                )";
-
+        $sql .= " AND (IPRESS_ATENC LIKE ? OR RENAES LIKE ?)";
         $texto = '%' . $busqueda . '%';
-
         $parametros[] = $texto;
         $parametros[] = $texto;
     }
-
     $sql .= " ORDER BY CAST(RENAES AS UNSIGNED) ASC";
-
     $stmt = $this->db->prepare($sql);
     $stmt->execute($parametros);
-
     return $stmt->fetchAll();
 }
+
 public function listarUnidadesEjecutoras(): array
 {
     $sql = "SELECT DISTINCT
