@@ -908,7 +908,6 @@ $provinciaActual =
                                         name="COMUNIDAD"
                                         id="COMUNIDAD"
                                         class="form-control"
-                                        readonly
                                         maxlength="150"
                                         value="<?= e($ocurrencia['COMUNIDAD'] ?? '') ?>"
                                     >
@@ -932,7 +931,6 @@ $provinciaActual =
                                         name="DIRECCION"
                                         id="DIRECCION"
                                         class="form-control"
-                                        readonly
                                         maxlength="250"
                                         value="<?= e($ocurrencia['DIRECCION'] ?? '') ?>"
                                     >
@@ -956,7 +954,6 @@ $provinciaActual =
                                         name="REFERENCIA"
                                         id="REFERENCIA"
                                         class="form-control"
-                                        readonly
                                         maxlength="250"
                                         value="<?= e($ocurrencia['REFERENCIA'] ?? '') ?>"
                                     >
@@ -2070,7 +2067,7 @@ aplicarReglaLote();
     }
 
     // Bloquear campos derivados de IPRESS y datos geográficos.
-    ['UE','RED','MICRORED','PROVINCIA','COMUNIDAD','DIRECCION','REFERENCIA','EessAdscrito'].forEach(id => {
+    ['UE','RED','MICRORED','PROVINCIA','EessAdscrito'].forEach(id => {
         const el = byId(id);
         if (el) el.readOnly = true;
     });
@@ -2485,45 +2482,88 @@ require_once __DIR__ . '/../layouts/footer.php';
 
 
 <script>
-/* Control de campos institucionales segun IAFAS */
+/* Restricción de IPRESS según IAFAS: solo SIS utiliza el catálogo de IPRESS. */
 (function () {
     'use strict';
-    const selector = document.getElementById('IdIAFAS');
-    if (!selector) return;
-    const ipress = document.getElementById('IPRESS_BUSCAR');
-    const resultados = document.getElementById('resultadoIpress');
-    const idEess = document.getElementById('IdEESS');
-    const ue = document.getElementById('UE');
-    const red = document.getElementById('RED');
-    const microred = document.getElementById('MICRORED');
-    const provincia = document.getElementById('PROVINCIA');
-    const distrito = document.getElementById('DISTRITO');
-    const eessAnterior = document.getElementById('EessAdscrito');
-    function esSIS() {
-        const op = selector.options[selector.selectedIndex];
-        return !!op && String(op.dataset.nombre || '').trim().toUpperCase() === 'SIS';
+
+    const iafas = document.getElementById('IdIAFAS');
+    if (!iafas) return;
+
+    const ids = {
+        buscador: 'IPRESS_BUSCAR',
+        resultados: 'resultadoIpress',
+        idEess: 'IdEESS',
+        ue: 'UE',
+        red: 'RED',
+        microred: 'MICRORED',
+        provincia: 'PROVINCIA',
+        distrito: 'DISTRITO'
+    };
+
+    const campo = (id) => document.getElementById(id);
+    const distrito = campo(ids.distrito);
+    const opcionesDistritoSIS = distrito
+        ? Array.from(distrito.options).map(option => option.cloneNode(true))
+        : [];
+
+    function esSISSeleccionado() {
+        const opcion = iafas.options[iafas.selectedIndex];
+        return !!opcion &&
+            String(opcion.dataset.nombre || '').trim().toUpperCase() === 'SIS';
     }
-    function limpiarSelect(el, texto) {
-        if (!el) return;
-        el.innerHTML = '';
-        const op = document.createElement('option');
-        op.value = ''; op.textContent = texto; el.appendChild(op);
-    }
-    function aplicar() {
-        const seleccionada = selector.value !== '';
-        const sis = seleccionada && esSIS();
-        if (ipress) { ipress.disabled = !sis; ipress.classList.toggle('bg-light', !sis); if (!sis) ipress.value = ''; }
-        if (resultados) { resultados.innerHTML = ''; resultados.style.display = sis ? '' : 'none'; }
-        if (!sis && idEess) idEess.value = '';
-        [ue, red, microred, provincia].forEach(function (el) { if (!el) return; el.readOnly = true; el.classList.add('bg-light'); if (!sis) el.value = ''; });
-        if (distrito) {
-            distrito.disabled = !sis; distrito.classList.toggle('bg-light', !sis);
-            if (!sis) limpiarSelect(distrito, seleccionada ? 'No aplica para esta IAFAS' : 'Seleccione una IAFAS');
-            else if (distrito.options.length && distrito.options[0].textContent.indexOf('No aplica') !== -1) limpiarSelect(distrito, 'Seleccione un Distrito');
+
+    function aplicarReglaIPRESS() {
+        const sis = esSISSeleccionado();
+        const buscador = campo(ids.buscador);
+        const resultados = campo(ids.resultados);
+        const idEess = campo(ids.idEess);
+
+        // El buscador y sus resultados solo están disponibles para SIS.
+        if (buscador) {
+            buscador.disabled = !sis;
+            buscador.readOnly = !sis;
+            buscador.setAttribute('aria-disabled', sis ? 'false' : 'true');
+            if (!sis) buscador.value = '';
         }
-        if (eessAnterior) { eessAnterior.readOnly = true; eessAnterior.disabled = seleccionada && !sis; eessAnterior.classList.add('bg-light'); if (!sis) eessAnterior.value = ''; }
+
+        if (resultados) {
+            resultados.replaceChildren();
+            resultados.style.display = sis ? '' : 'none';
+        }
+
+        // Nunca conservar una IPRESS SIS cuando se cambia a otra IAFAS.
+        if (!sis && idEess) idEess.value = '';
+
+        // Datos derivados de la IPRESS: solo SIS los puede cargar.
+        [ids.ue, ids.red, ids.microred, ids.provincia].forEach(id => {
+            const el = campo(id);
+            if (!el) return;
+            el.readOnly = true;
+            el.disabled = !sis;
+            el.classList.toggle('bg-light', !sis);
+            if (!sis) el.value = '';
+        });
+
+        // Distrito es seleccionable únicamente para SIS.
+        if (distrito) {
+            distrito.disabled = !sis;
+            distrito.classList.toggle('bg-light', !sis);
+            if (!sis) {
+                distrito.value = '';
+                distrito.replaceChildren(new Option('No aplica para esta IAFAS', ''));
+            } else {
+                // Recuperar las opciones originales si antes se eligió otra IAFAS.
+                const tieneOpcionesSIS = Array.from(distrito.options)
+                    .some(o => !o.textContent.includes('No aplica para esta IAFAS'));
+                if (!tieneOpcionesSIS) {
+                    distrito.replaceChildren(...opcionesDistritoSIS.map(o => o.cloneNode(true)));
+                }
+            }
+        }
     }
-    selector.addEventListener('change', aplicar);
-    aplicar();
+
+    iafas.addEventListener('change', aplicarReglaIPRESS);
+    aplicarReglaIPRESS();
 })();
 </script>
+

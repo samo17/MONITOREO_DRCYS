@@ -1,0 +1,24 @@
+[33mcommit 7dd190e04c1b2580fc86c5f4189a40f282899a57[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Merge: 29d8031 271b947
+Author: SAMO <35963037+samo17@users.noreply.github.com>
+Date:   Wed Nov 25 07:34:13 2026 -0500
+
+    Merge branch 'main' of https://github.com/samo17/MONITOREO_DRCYS
+
+[33mcommit 29d8031119497881bb8676f0151a97de3b382764[m
+Author: SAMO <35963037+samo17@users.noreply.github.com>
+Date:   Wed Nov 25 07:32:17 2026 -0500
+
+    Version reg IAFAS
+
+[33mcommit 271b9473734e94561b6aec78658b3cce19e7a526[m
+Author: SAMO <35963037+samo17@users.noreply.github.com>
+Date:   Wed Nov 25 07:14:08 2026 -0500
+
+    Create README.md
+
+[33mcommit 3f8b68d0b2e0d5aa7e40a12e70451d6f5dd27260[m
+Author: SAMO <35963037+samo17@users.noreply.github.com>
+Date:   Thu Sep 24 10:57:51 2026 -0500
+
+    CARGA INICIAL
